@@ -39,6 +39,7 @@ class Player:
         self.combo_timer = self.combo_window
         multiplier = min(self.combo, 3)
         self.score += score * multiplier
+        return True
 
     def take_damage(self):
         self.hp = max(0, self.hp - 1)

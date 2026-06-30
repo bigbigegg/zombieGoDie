@@ -8,6 +8,7 @@ from gesture.detector import HandDetector
 from gesture.classifier import classify, GestureDebouncer, Gesture, _finger_states
 from game.scene import Scene
 from game.hud import HUD
+from game.screenfx import ScreenFX
 
 # Debug sidebar dimensions
 DBG_W  = config.DEBUG_PANEL_W
@@ -114,8 +115,9 @@ def main():
     clock = pygame.time.Clock()
 
     # Offscreen surface for the game — always SCREEN_W wide
-    game_surf = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
-    dbg_panel = pygame.Surface((DBG_W, DBG_H))
+    game_surf    = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
+    overlay_surf = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
+    dbg_panel    = pygame.Surface((DBG_W, DBG_H))
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -124,7 +126,8 @@ def main():
 
     detector  = HandDetector() if cap else None
     debouncer = GestureDebouncer()
-    scene     = Scene()
+    screenfx = ScreenFX()
+    scene    = Scene(screenfx)
     hud       = HUD()
 
     last_annotated = None
@@ -145,7 +148,7 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     _quit(cap, detector)
                 if event.key == pygame.K_r and scene.game_over:
-                    scene = Scene()
+                    scene = Scene(screenfx)
                 if event.key == pygame.K_d:
                     debug_mode = not debug_mode
                     new_w = config.SCREEN_W + DBG_W if debug_mode else config.SCREEN_W
@@ -174,25 +177,33 @@ def main():
 
         # --- Update ---
         scene.update(dt, confirmed_name)
+        screenfx.update(dt)
+        screenfx.low_hp_pulse(not scene.intro and not scene.game_over and scene.player.hp <= 2)
 
         # --- Draw game to offscreen surface ---
         scene.draw(game_surf)
         hud.draw(game_surf, scene.player)
 
+        # Screen overlays
+        overlay_surf.fill((0, 0, 0, 0))
+        screenfx.draw_overlay(overlay_surf)
+        game_surf.blit(overlay_surf, (0, 0))
+
         if not debug_mode:
             fps = font_hint.render(f"帧率 {int(clock.get_fps())}  D=调试", True, (80, 80, 80))
             game_surf.blit(fps, (8, config.SCREEN_H - 88))
 
-        # --- Compose final window ---
+        # --- Compose final window with screen shake ---
+        shake_off = screenfx.get_shake_offset()
         screen.fill((0, 0, 0))
         if debug_mode:
             _draw_debug_panel(dbg_panel, last_annotated,
                               last_raw, last_confirmed,
                               debouncer, last_landmarks, clock)
             screen.blit(dbg_panel, (0, 0))
-            screen.blit(game_surf, (DBG_W, 0))
+            screen.blit(game_surf, (DBG_W + shake_off[0], shake_off[1]))
         else:
-            screen.blit(game_surf, (0, 0))
+            screen.blit(game_surf, (shake_off[0], shake_off[1]))
 
         pygame.display.flip()
 
