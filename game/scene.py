@@ -1,9 +1,22 @@
+import os
 import random
 import pygame
 import config
 from game.zombie import Zombie
 from game.attack import ATTACK_MAP
 from game.player import Player
+
+_BG = None
+
+
+def _load_bg():
+    global _BG
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                        "assets", "sprites", "background", "bg.png")
+    if os.path.exists(path):
+        _BG = pygame.image.load(path).convert()
+    else:
+        _BG = None
 
 
 class FloatingText:
@@ -50,6 +63,8 @@ class Scene:
         self.intro        = True          # show instructions before game starts
         self.wave_flash_timer = 0.0
         self._intro_blink = 0.0
+        if _BG is None:
+            _load_bg()
 
     def _spawn_wave(self):
         wave  = self.player.wave
@@ -149,12 +164,10 @@ class Scene:
 
     def draw(self, surface):
         # Background
-        surface.fill(config.COLORS["bg"])
-
-        # Ground line
-        pygame.draw.line(surface, (50, 50, 60),
-                         (0, config.SCREEN_H - 100),
-                         (config.SCREEN_W, config.SCREEN_H - 100), 2)
+        if _BG is not None:
+            surface.blit(_BG, (0, 0))
+        else:
+            surface.fill(config.COLORS["bg"])
 
         # Attacks (behind zombies)
         for atk in self.attacks:
