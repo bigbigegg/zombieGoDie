@@ -110,7 +110,6 @@ def main():
     scene     = Scene()
     hud       = HUD()
 
-    cam_surf      = None
     debug_mode    = True   # on by default for easy debugging
     last_annotated = None
     last_raw       = Gesture.NONE
@@ -150,8 +149,6 @@ def main():
                 last_confirmed = confirmed
                 last_landmarks = landmarks
 
-                cam_surf = cv_frame_to_pygame(annotated, (config.CAM_W, config.CAM_H))
-
                 if confirmed != Gesture.NONE:
                     confirmed_name = confirmed.name
 
@@ -160,7 +157,7 @@ def main():
 
         # --- Draw ---
         scene.draw(screen)
-        hud.draw(screen, scene.player, cam_surf)
+        hud.draw(screen, scene.player)
 
         if debug_mode and last_annotated is not None:
             _draw_debug_overlay(screen, last_annotated,

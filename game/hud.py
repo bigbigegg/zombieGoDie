@@ -16,11 +16,9 @@ class HUD:
         self.font_md = pygame.font.SysFont("Arial", 20)
         self.font_sm = pygame.font.SysFont("Arial", 16)
 
-    def draw(self, surface, player, cam_surf=None):
+    def draw(self, surface, player):
         self._draw_top_bar(surface, player)
         self._draw_skill_bar(surface, player)
-        if cam_surf is not None:
-            self._draw_cam_window(surface, cam_surf)
 
     def _draw_top_bar(self, surface, player):
         bar_h = 50
@@ -84,9 +82,3 @@ class HUD:
                 cd_text = self.font_sm.render(f"{remaining:.1f}s", True, (180, 180, 200))
                 surface.blit(cd_text, (x + (slot_w - cd_text.get_width()) // 2, bar_y + 36))
 
-    def _draw_cam_window(self, surface, cam_surf):
-        margin = config.CAM_MARGIN
-        x = config.SCREEN_W - config.CAM_W - margin
-        y = config.SCREEN_H - config.CAM_H - 70 - margin
-        pygame.draw.rect(surface, (0, 0, 0), (x - 2, y - 2, config.CAM_W + 4, config.CAM_H + 4))
-        surface.blit(cam_surf, (x, y))
