@@ -12,9 +12,9 @@ SKILL_LABELS = {
 
 class HUD:
     def __init__(self):
-        self.font_lg = pygame.font.SysFont("Arial", 28, bold=True)
-        self.font_md = pygame.font.SysFont("Arial", 20)
-        self.font_sm = pygame.font.SysFont("Arial", 16)
+        self.font_lg = config.get_font(28, bold=True)
+        self.font_md = config.get_font(20)
+        self.font_sm = config.get_font(16)
 
     def draw(self, surface, player):
         self._draw_top_bar(surface, player)

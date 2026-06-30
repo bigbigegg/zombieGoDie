@@ -14,7 +14,7 @@ class FloatingText:
         self.color = color
         self.timer = 0.0
         self.duration = 1.0
-        self.font  = pygame.font.SysFont("Arial", size, bold=True)
+        self.font  = config.get_font(size, bold=True)
 
     def update(self, dt):
         self.timer += dt
@@ -174,7 +174,7 @@ class Scene:
             s = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
             s.fill((255, 100, 50, alpha))
             surface.blit(s, (0, 0))
-            font = pygame.font.SysFont("Arial", 72, bold=True)
+            font = config.get_font(72, bold=True)
             text = font.render(f"第 {self.player.wave} 波", True, (255, 220, 100))
             x = (config.SCREEN_W - text.get_width()) // 2
             y = (config.SCREEN_H - text.get_height()) // 2
@@ -190,8 +190,8 @@ class Scene:
             s = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
             s.fill((0, 0, 0, 160))
             surface.blit(s, (0, 0))
-            font_big = pygame.font.SysFont("Arial", 80, bold=True)
-            font_sm  = pygame.font.SysFont("Arial", 36)
+            font_big = config.get_font(80, bold=True)
+            font_sm  = config.get_font(36)
             t1 = font_big.render("游戏结束", True, (220, 50, 50))
             t2 = font_sm.render(f"得分: {self.player.score}  波次: {self.player.wave}", True, (220, 220, 220))
             t3 = font_sm.render("按 R 重新开始  |  ESC 退出", True, (180, 180, 180))
@@ -210,12 +210,12 @@ class Scene:
 
         cx = config.SCREEN_W // 2
 
-        font_title  = pygame.font.SysFont("Arial", 72, bold=True)
-        font_sub    = pygame.font.SysFont("Arial", 26, bold=True)
-        font_body   = pygame.font.SysFont("Arial", 22)
-        font_hint   = pygame.font.SysFont("Arial", 28, bold=True)
-        font_label  = pygame.font.SysFont("Arial", 20, bold=True)
-        font_desc   = pygame.font.SysFont("Arial", 19)
+        font_title  = config.get_font(72, bold=True)
+        font_sub    = config.get_font(26, bold=True)
+        font_body   = config.get_font(22)
+        font_hint   = config.get_font(28, bold=True)
+        font_label  = config.get_font(20, bold=True)
+        font_desc   = config.get_font(19)
 
         # Title
         title = font_title.render("ZOMBIE GO DIE", True, (220, 50, 50))

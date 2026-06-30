@@ -32,8 +32,8 @@ def _draw_debug_panel(panel, annotated_frame, raw, confirmed, debouncer, landmar
     WHITE  = (220, 220, 220)
     GRAY   = (120, 120, 130)
 
-    font_title = pygame.font.SysFont("Courier", 14, bold=True)
-    font_body  = pygame.font.SysFont("Courier", 13)
+    font_title = config.get_font(14, bold=True)
+    font_body  = config.get_font(13)
 
     # Title bar
     pygame.draw.rect(panel, (30, 30, 50), (0, 0, DBG_W, 26))
@@ -132,7 +132,7 @@ def main():
     last_confirmed = Gesture.NONE
     last_landmarks = None
 
-    font_hint = pygame.font.SysFont("Arial", 16)
+    font_hint = config.get_font(16)
 
     while True:
         dt = clock.tick(config.FPS) / 1000.0

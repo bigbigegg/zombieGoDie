@@ -42,3 +42,30 @@ COLORS = {
     "wave_flash": (255, 100, 50),
     "freeze":     (100, 180, 255),
 }
+
+# ── Chinese-capable font ──
+_CHINESE_FONTS = [
+    "/System/Library/Fonts/STHeiti Medium.ttc",
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "/System/Library/Fonts/PingFang.ttc",
+]
+_CHINESE_FONT_PATH = None
+
+
+def _init_font():
+    global _CHINESE_FONT_PATH
+    import os
+    for p in _CHINESE_FONTS:
+        if os.path.exists(p):
+            _CHINESE_FONT_PATH = p
+            return
+
+
+def get_font(size, bold=False):
+    """Return a pygame Font that supports CJK characters."""
+    import pygame
+    if _CHINESE_FONT_PATH is None:
+        _init_font()
+    if _CHINESE_FONT_PATH:
+        return pygame.font.Font(_CHINESE_FONT_PATH, size)
+    return pygame.font.SysFont("Arial", size, bold=bold)
