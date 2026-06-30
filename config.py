@@ -2,8 +2,7 @@ SCREEN_W = 1280
 SCREEN_H = 720
 FPS = 60
 
-CAM_W = 240
-CAM_H = 180
+DEBUG_PANEL_W = 300   # left sidebar width when debug mode is on
 CAM_MARGIN = 10
 
 GESTURE_CONFIRM_FRAMES = 5

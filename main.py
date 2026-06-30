@@ -5,104 +5,121 @@ import numpy as np
 
 import config
 from gesture.detector import HandDetector
-from gesture.classifier import classify, GestureDebouncer, Gesture
+from gesture.classifier import classify, GestureDebouncer, Gesture, _finger_states
 from game.scene import Scene
 from game.hud import HUD
 
+# Debug sidebar dimensions
+DBG_W  = config.DEBUG_PANEL_W
+DBG_H  = config.SCREEN_H
+CAM_W  = DBG_W
+CAM_H  = DBG_W * 3 // 4   # 4:3 aspect → 300×225
 
-def cv_frame_to_pygame(frame_bgr, size):
-    """Convert OpenCV BGR frame to a scaled Pygame Surface."""
+
+def cv_frame_to_pygame(frame_bgr, w, h):
     frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-    frame_rgb = cv2.resize(frame_rgb, size)
-    # OpenCV gives (H,W,3); Pygame wants (W,H,3) via surfarray
-    surf = pygame.surfarray.make_surface(np.transpose(frame_rgb, (1, 0, 2)))
-    return surf
+    frame_rgb = cv2.resize(frame_rgb, (w, h))
+    return pygame.surfarray.make_surface(np.transpose(frame_rgb, (1, 0, 2)))
 
 
-DEBUG_CAM_W = 480
-DEBUG_CAM_H = 360
-
-
-def _draw_debug_overlay(surface, annotated_frame, raw, confirmed, debouncer, landmarks, clock):
-    """Large camera window + gesture info panel shown when debug mode is on."""
-    # Large camera feed — top-left
-    cam_big = cv_frame_to_pygame(annotated_frame, (DEBUG_CAM_W, DEBUG_CAM_H))
-    surface.blit(cam_big, (0, 50))
-
-    panel_x = DEBUG_CAM_W + 10
-    panel_y = 50
-    panel_w = 340
-    panel_h = DEBUG_CAM_H
-
-    bg = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-    bg.fill((0, 0, 0, 180))
-    surface.blit(bg, (panel_x, panel_y))
-
-    font_title = pygame.font.SysFont("Courier", 18, bold=True)
-    font_body  = pygame.font.SysFont("Courier", 15)
+def _draw_debug_panel(panel, annotated_frame, raw, confirmed, debouncer, landmarks, clock):
+    """Render everything into the fixed-size debug sidebar surface."""
+    panel.fill((12, 12, 20))
 
     YELLOW = (255, 220, 50)
-    WHITE  = (220, 220, 220)
     GREEN  = (80, 220, 100)
-    GRAY   = (140, 140, 140)
+    RED    = (220, 80, 80)
+    WHITE  = (220, 220, 220)
+    GRAY   = (120, 120, 130)
 
-    y = panel_y + 8
-    surface.blit(font_title.render("[ DEBUG MODE — D to toggle ]", True, YELLOW), (panel_x + 8, y))
-    y += 26
+    font_title = pygame.font.SysFont("Courier", 14, bold=True)
+    font_body  = pygame.font.SysFont("Courier", 13)
+
+    # Title bar
+    pygame.draw.rect(panel, (30, 30, 50), (0, 0, DBG_W, 26))
+    panel.blit(font_title.render("DEBUG  [D] toggle", True, YELLOW), (8, 5))
+
+    y = 30
+
+    # Camera feed
+    if annotated_frame is not None:
+        cam_surf = cv_frame_to_pygame(annotated_frame, CAM_W, CAM_H)
+        panel.blit(cam_surf, (0, y))
+        pygame.draw.rect(panel, YELLOW, (0, y, CAM_W, CAM_H), 1)
+        y += CAM_H + 8
+    else:
+        pygame.draw.rect(panel, GRAY, (0, y, CAM_W, CAM_H), 1)
+        no_cam = font_title.render("No camera", True, GRAY)
+        panel.blit(no_cam, ((DBG_W - no_cam.get_width()) // 2, y + CAM_H // 2 - 8))
+        y += CAM_H + 8
+
+    # Divider
+    pygame.draw.line(panel, (40, 40, 60), (0, y), (DBG_W, y))
+    y += 6
 
     # FPS
-    surface.blit(font_body.render(f"FPS       : {int(clock.get_fps())}", True, WHITE), (panel_x + 8, y))
-    y += 20
+    panel.blit(font_body.render(f"FPS       {int(clock.get_fps())}", True, WHITE), (8, y))
+    y += 18
 
     # Raw gesture
-    raw_color = GREEN if raw.name != "NONE" else GRAY
-    surface.blit(font_body.render(f"Raw       : {raw.name}", True, raw_color), (panel_x + 8, y))
-    y += 20
+    rc = GREEN if raw.name != "NONE" else GRAY
+    panel.blit(font_body.render(f"Raw       {raw.name}", True, rc), (8, y))
+    y += 18
 
-    # Confirmed gesture
-    conf_color = (255, 80, 80) if confirmed.name != "NONE" else GRAY
-    surface.blit(font_body.render(f"Confirmed : {confirmed.name}", True, conf_color), (panel_x + 8, y))
-    y += 20
+    # Confirmed gesture — highlight box when active
+    if confirmed.name != "NONE":
+        pygame.draw.rect(panel, (60, 20, 20), (4, y - 2, DBG_W - 8, 20))
+    cc = RED if confirmed.name != "NONE" else GRAY
+    panel.blit(font_body.render(f"Confirmed {confirmed.name}", True, cc), (8, y))
+    y += 22
 
-    # Debounce history bar
+    # Debounce buffer
     history = list(debouncer._history)
-    bar_str = " ".join(g.name[:2] for g in history)
-    surface.blit(font_body.render(f"Buffer    : {bar_str}", True, GRAY), (panel_x + 8, y))
-    y += 28
+    bar_str  = " ".join(g.name[:2] for g in history)
+    panel.blit(font_body.render(f"Buffer    {bar_str}", True, GRAY), (8, y))
+    y += 22
+
+    # Divider
+    pygame.draw.line(panel, (40, 40, 60), (0, y), (DBG_W, y))
+    y += 8
 
     # Finger states
+    panel.blit(font_title.render("Finger states", True, YELLOW), (8, y))
+    y += 18
+
     if landmarks:
-        from gesture.classifier import _finger_states
-        ext = _finger_states(landmarks)
+        ext   = _finger_states(landmarks)
         names = ["Thumb", "Index", "Mid  ", "Ring ", "Pinky"]
-        surface.blit(font_title.render("Finger states:", True, YELLOW), (panel_x + 8, y))
-        y += 22
         for name, state in zip(names, ext):
-            color = GREEN if state else (180, 60, 60)
+            color = GREEN if state else RED
             icon  = "UP  ▲" if state else "curl ▼"
-            surface.blit(font_body.render(f"  {name} : {icon}", True, color), (panel_x + 8, y))
-            y += 18
+            panel.blit(font_body.render(f"  {name}  {icon}", True, color), (8, y))
+            y += 17
     else:
-        surface.blit(font_title.render("No hand detected", True, (180, 60, 60)), (panel_x + 8, y))
+        panel.blit(font_title.render("  No hand detected", True, RED), (8, y))
 
-    # Border
-    pygame.draw.rect(surface, YELLOW, (panel_x, panel_y, panel_w, panel_h), 1)
-    pygame.draw.rect(surface, YELLOW, (0, 50, DEBUG_CAM_W, DEBUG_CAM_H), 1)
-
-    # Label
-    label = font_title.render("D=hide debug", True, YELLOW)
-    surface.blit(label, (4, 52))
+    # Right border separator
+    pygame.draw.line(panel, (50, 50, 80), (DBG_W - 1, 0), (DBG_W - 1, DBG_H), 1)
 
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((config.SCREEN_W, config.SCREEN_H))
+
+    # Window resizes based on debug mode
+    debug_mode = True
+    win_w = config.SCREEN_W + DBG_W if debug_mode else config.SCREEN_W
+
+    screen = pygame.display.set_mode((win_w, config.SCREEN_H))
     pygame.display.set_caption("ZombieGoDie")
     clock = pygame.time.Clock()
 
+    # Offscreen surface for the game — always SCREEN_W wide
+    game_surf = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
+    dbg_panel = pygame.Surface((DBG_W, DBG_H))
+
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
-        print("[ERROR] Cannot open camera. Running without gesture input.")
+        print("[ERROR] Cannot open camera.")
         cap = None
 
     detector  = HandDetector() if cap else None
@@ -110,13 +127,12 @@ def main():
     scene     = Scene()
     hud       = HUD()
 
-    debug_mode    = True   # on by default for easy debugging
     last_annotated = None
     last_raw       = Gesture.NONE
     last_confirmed = Gesture.NONE
     last_landmarks = None
 
-    font_fps = pygame.font.SysFont("Arial", 18)
+    font_hint = pygame.font.SysFont("Arial", 16)
 
     while True:
         dt = clock.tick(config.FPS) / 1000.0
@@ -132,6 +148,8 @@ def main():
                     scene = Scene()
                 if event.key == pygame.K_d:
                     debug_mode = not debug_mode
+                    new_w = config.SCREEN_W + DBG_W if debug_mode else config.SCREEN_W
+                    screen = pygame.display.set_mode((new_w, config.SCREEN_H))
 
         # --- Camera + Gesture ---
         confirmed_name = None
@@ -140,9 +158,9 @@ def main():
             ok, frame = cap.read()
             if ok:
                 frame = cv2.flip(frame, 1)
-                landmarks, annotated   = detector.update(frame)
-                raw                    = classify(landmarks)
-                confirmed              = debouncer.update(raw)
+                landmarks, annotated = detector.update(frame)
+                raw       = classify(landmarks)
+                confirmed = debouncer.update(raw)
 
                 last_annotated = annotated
                 last_raw       = raw
@@ -155,23 +173,24 @@ def main():
         # --- Update ---
         scene.update(dt, confirmed_name)
 
-        # --- Draw ---
-        scene.draw(screen)
-        hud.draw(screen, scene.player)
-
-        if debug_mode and last_annotated is not None:
-            _draw_debug_overlay(screen, last_annotated,
-                                last_raw, last_confirmed,
-                                debouncer, last_landmarks, clock)
+        # --- Draw game to offscreen surface ---
+        scene.draw(game_surf)
+        hud.draw(game_surf, scene.player)
 
         if not debug_mode:
-            fps_text = font_fps.render(f"FPS {int(clock.get_fps())}", True, (120, 120, 120))
-            screen.blit(fps_text, (8, config.SCREEN_H - 90))
+            fps = font_hint.render(f"FPS {int(clock.get_fps())}  D=debug", True, (80, 80, 80))
+            game_surf.blit(fps, (8, config.SCREEN_H - 88))
 
-        # Debug mode hint when off
-        if not debug_mode:
-            hint = font_fps.render("D = debug", True, (80, 80, 80))
-            screen.blit(hint, (8, 54))
+        # --- Compose final window ---
+        screen.fill((0, 0, 0))
+        if debug_mode:
+            _draw_debug_panel(dbg_panel, last_annotated,
+                              last_raw, last_confirmed,
+                              debouncer, last_landmarks, clock)
+            screen.blit(dbg_panel, (0, 0))
+            screen.blit(game_surf, (DBG_W, 0))
+        else:
+            screen.blit(game_surf, (0, 0))
 
         pygame.display.flip()
 
