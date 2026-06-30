@@ -2,11 +2,11 @@ import pygame
 import config
 
 SKILL_LABELS = {
-    "FIST":     ("✊", "Fist"),
-    "POINT":    ("☝", "Point"),
-    "OPEN":     ("✋", "Open"),
-    "PEACE":    ("✌", "Peace"),
-    "THUMBSUP": ("👍", "Thumb"),
+    "FIST":     ("✊", "拳头"),
+    "POINT":    ("☝", "食指"),
+    "OPEN":     ("✋", "手掌"),
+    "PEACE":    ("✌", "剪刀"),
+    "THUMBSUP": ("👍", "拇指"),
 }
 
 
@@ -31,16 +31,16 @@ class HUD:
             pygame.draw.rect(surface, color, (hp_x + i * 32, 12, 26, 26), border_radius=4)
 
         # Wave
-        wave_text = self.font_lg.render(f"WAVE  {player.wave}", True, config.COLORS["text"])
+        wave_text = self.font_lg.render(f"波次  {player.wave}", True, config.COLORS["text"])
         surface.blit(wave_text, (config.SCREEN_W // 2 - wave_text.get_width() // 2, 10))
 
         # Score
-        score_text = self.font_lg.render(f"SCORE  {player.score}", True, config.COLORS["text"])
+        score_text = self.font_lg.render(f"得分  {player.score}", True, config.COLORS["text"])
         surface.blit(score_text, (config.SCREEN_W - score_text.get_width() - 16, 10))
 
         # Combo
         if player.combo >= 2:
-            combo_text = self.font_lg.render(f"COMBO x{min(player.combo, 3)}!", True, config.COLORS["combo"])
+            combo_text = self.font_lg.render(f"连击 x{min(player.combo, 3)}!", True, config.COLORS["combo"])
             surface.blit(combo_text, (config.SCREEN_W // 2 - combo_text.get_width() // 2 + 160, 10))
 
     def _draw_skill_bar(self, surface, player):
@@ -79,6 +79,6 @@ class HUD:
             if not ready:
                 cd_total = config.CD[skill]
                 remaining = frac * cd_total
-                cd_text = self.font_sm.render(f"{remaining:.1f}s", True, (180, 180, 200))
+                cd_text = self.font_sm.render(f"{remaining:.1f}秒", True, (180, 180, 200))
                 surface.blit(cd_text, (x + (slot_w - cd_text.get_width()) // 2, bar_y + 36))
 

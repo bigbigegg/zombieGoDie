@@ -37,7 +37,7 @@ def _draw_debug_panel(panel, annotated_frame, raw, confirmed, debouncer, landmar
 
     # Title bar
     pygame.draw.rect(panel, (30, 30, 50), (0, 0, DBG_W, 26))
-    panel.blit(font_title.render("DEBUG  [D] toggle", True, YELLOW), (8, 5))
+    panel.blit(font_title.render("调试图层  [D] 开关", True, YELLOW), (8, 5))
 
     y = 30
 
@@ -58,25 +58,25 @@ def _draw_debug_panel(panel, annotated_frame, raw, confirmed, debouncer, landmar
     y += 6
 
     # FPS
-    panel.blit(font_body.render(f"FPS       {int(clock.get_fps())}", True, WHITE), (8, y))
+    panel.blit(font_body.render(f"帧率  {int(clock.get_fps())}", True, WHITE), (8, y))
     y += 18
 
     # Raw gesture
     rc = GREEN if raw.name != "NONE" else GRAY
-    panel.blit(font_body.render(f"Raw       {raw.name}", True, rc), (8, y))
+    panel.blit(font_body.render(f"当前  {raw.name}", True, rc), (8, y))
     y += 18
 
     # Confirmed gesture — highlight box when active
     if confirmed.name != "NONE":
         pygame.draw.rect(panel, (60, 20, 20), (4, y - 2, DBG_W - 8, 20))
     cc = RED if confirmed.name != "NONE" else GRAY
-    panel.blit(font_body.render(f"Confirmed {confirmed.name}", True, cc), (8, y))
+    panel.blit(font_body.render(f"触发  {confirmed.name}", True, cc), (8, y))
     y += 22
 
     # Debounce buffer
     history = list(debouncer._history)
     bar_str  = " ".join(g.name[:2] for g in history)
-    panel.blit(font_body.render(f"Buffer    {bar_str}", True, GRAY), (8, y))
+    panel.blit(font_body.render(f"缓存  {bar_str}", True, GRAY), (8, y))
     y += 22
 
     # Divider
@@ -84,19 +84,19 @@ def _draw_debug_panel(panel, annotated_frame, raw, confirmed, debouncer, landmar
     y += 8
 
     # Finger states
-    panel.blit(font_title.render("Finger states", True, YELLOW), (8, y))
+    panel.blit(font_title.render("手指状态", True, YELLOW), (8, y))
     y += 18
 
     if landmarks:
         ext   = _finger_states(landmarks)
-        names = ["Thumb", "Index", "Mid  ", "Ring ", "Pinky"]
+        names = ["拇指", "食指", "中指", "无名", "小指"]
         for name, state in zip(names, ext):
             color = GREEN if state else RED
-            icon  = "UP  ▲" if state else "curl ▼"
+            icon  = "伸 ▲" if state else "曲 ▼"
             panel.blit(font_body.render(f"  {name}  {icon}", True, color), (8, y))
             y += 17
     else:
-        panel.blit(font_title.render("  No hand detected", True, RED), (8, y))
+        panel.blit(font_title.render("  未检测到手部", True, RED), (8, y))
 
     # Right border separator
     pygame.draw.line(panel, (50, 50, 80), (DBG_W - 1, 0), (DBG_W - 1, DBG_H), 1)
@@ -180,7 +180,7 @@ def main():
         hud.draw(game_surf, scene.player)
 
         if not debug_mode:
-            fps = font_hint.render(f"FPS {int(clock.get_fps())}  D=debug", True, (80, 80, 80))
+            fps = font_hint.render(f"帧率 {int(clock.get_fps())}  D=调试", True, (80, 80, 80))
             game_surf.blit(fps, (8, config.SCREEN_H - 88))
 
         # --- Compose final window ---

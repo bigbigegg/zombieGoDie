@@ -31,11 +31,11 @@ class FloatingText:
 
 
 GESTURES_INFO = [
-    ("✊  Fist",      "Shockwave — AOE clears left 1/3 screen",  "CD 3s",  (255, 120,  60)),
-    ("☝  Point",     "Bullet — fast single-target shot",         "CD 1s",  (255, 230,  60)),
-    ("✋  Open Hand", "Freeze — all zombies slow 50% for 3s",    "CD 5s",  (100, 180, 255)),
-    ("✌  Peace",     "Dual Laser — two beams for 0.5s",          "CD 2s",  (200,  80, 255)),
-    ("👍  Thumb Up",  "Bomb — delayed AOE explosion",             "CD 4s",  (80,  220, 120)),
+    ("✊  拳头 Fist",       "冲击波 — 清空屏幕左1/3区域",  "冷却 3s", (255, 120,  60)),
+    ("☝  食指 Point",      "精准射击 — 高速单体子弹",     "冷却 1s", (255, 230,  60)),
+    ("✋  手掌 Open",       "冰冻术 — 全屏僵尸减速50%",   "冷却 5s", (100, 180, 255)),
+    ("✌  剪刀手 Peace",    "双线激光 — 两条水平激光0.5s","冷却 2s", (200,  80, 255)),
+    ("👍  大拇指 Thumb Up","投弹 — 延时范围爆炸",         "冷却 4s", (80,  220, 120)),
 ]
 
 
@@ -175,7 +175,7 @@ class Scene:
             s.fill((255, 100, 50, alpha))
             surface.blit(s, (0, 0))
             font = pygame.font.SysFont("Arial", 72, bold=True)
-            text = font.render(f"WAVE {self.player.wave}", True, (255, 220, 100))
+            text = font.render(f"第 {self.player.wave} 波", True, (255, 220, 100))
             x = (config.SCREEN_W - text.get_width()) // 2
             y = (config.SCREEN_H - text.get_height()) // 2
             surface.blit(text, (x, y))
@@ -192,9 +192,9 @@ class Scene:
             surface.blit(s, (0, 0))
             font_big = pygame.font.SysFont("Arial", 80, bold=True)
             font_sm  = pygame.font.SysFont("Arial", 36)
-            t1 = font_big.render("GAME OVER", True, (220, 50, 50))
-            t2 = font_sm.render(f"Score: {self.player.score}   Wave: {self.player.wave}", True, (220, 220, 220))
-            t3 = font_sm.render("Press R to restart  |  ESC to quit", True, (180, 180, 180))
+            t1 = font_big.render("游戏结束", True, (220, 50, 50))
+            t2 = font_sm.render(f"得分: {self.player.score}  波次: {self.player.wave}", True, (220, 220, 220))
+            t3 = font_sm.render("按 R 重新开始  |  ESC 退出", True, (180, 180, 180))
             cx = config.SCREEN_W // 2
             cy = config.SCREEN_H // 2
             surface.blit(t1, (cx - t1.get_width() // 2, cy - 100))
@@ -222,21 +222,21 @@ class Scene:
         surface.blit(title, (cx - title.get_width() // 2, 40))
 
         # Subtitle
-        sub = font_sub.render("Defeat zombies with hand gestures!", True, (200, 180, 100))
+        sub = font_sub.render("用手势消灭僵尸！", True, (200, 180, 100))
         surface.blit(sub, (cx - sub.get_width() // 2, 125))
 
         # Divider
         pygame.draw.line(surface, (60, 60, 80), (80, 165), (config.SCREEN_W - 80, 165), 1)
 
         # How to play header
-        how = font_sub.render("HOW TO PLAY", True, (140, 200, 255))
+        how = font_sub.render("玩法说明", True, (140, 200, 255))
         surface.blit(how, (cx - how.get_width() // 2, 178))
 
         tips = [
-            "Face your camera and show your hand clearly.",
-            "Hold each gesture steady for a moment to trigger the skill.",
-            "Zombies come from the RIGHT — don't let them reach the left edge!",
-            "Every 30 seconds a new wave arrives with more zombies.",
+            "面对摄像头，在画面中清晰露出你的手。",
+            "每种手势需要稳定保持一小段时间来触发技能。",
+            "僵尸从屏幕右侧涌来——别让它们走到最左边！",
+            "每 30 秒进入下一波，僵尸更多、更快。",
         ]
         y = 215
         for tip in tips:
@@ -248,8 +248,8 @@ class Scene:
         pygame.draw.line(surface, (60, 60, 80), (80, y + 4), (config.SCREEN_W - 80, y + 4), 1)
         y += 18
 
-        # Gesture table header
-        gh = font_sub.render("GESTURE SKILLS", True, (140, 200, 255))
+        # Gesture skills header
+        gh = font_sub.render("手势技能", True, (140, 200, 255))
         surface.blit(gh, (cx - gh.get_width() // 2, y))
         y += 32
 
@@ -258,9 +258,9 @@ class Scene:
         col_cd      = cx + 340
 
         hdr_color = (120, 120, 140)
-        surface.blit(font_label.render("Gesture",  True, hdr_color), (col_gesture, y))
-        surface.blit(font_label.render("Effect",   True, hdr_color), (col_effect,  y))
-        surface.blit(font_label.render("Cooldown", True, hdr_color), (col_cd,      y))
+        surface.blit(font_label.render("手势",      True, hdr_color), (col_gesture, y))
+        surface.blit(font_label.render("效果",      True, hdr_color), (col_effect,  y))
+        surface.blit(font_label.render("冷却时间",  True, hdr_color), (col_cd,      y))
         y += 24
 
         for gesture, effect, cd, color in GESTURES_INFO:
@@ -272,5 +272,5 @@ class Scene:
 
         # Blinking "press space" prompt
         if int(self._intro_blink * 2) % 2 == 0:
-            prompt = font_hint.render("Press  SPACE  to start", True, (255, 220, 50))
+            prompt = font_hint.render("按 空格键 开始游戏", True, (255, 220, 50))
             surface.blit(prompt, (cx - prompt.get_width() // 2, config.SCREEN_H - 58))
