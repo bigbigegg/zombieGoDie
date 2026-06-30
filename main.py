@@ -150,6 +150,8 @@ def main():
                     debug_mode = not debug_mode
                     new_w = config.SCREEN_W + DBG_W if debug_mode else config.SCREEN_W
                     screen = pygame.display.set_mode((new_w, config.SCREEN_H))
+                if event.key == pygame.K_SPACE and scene.intro:
+                    scene.start_game()
 
         # --- Camera + Gesture ---
         confirmed_name = None

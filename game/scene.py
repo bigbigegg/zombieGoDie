@@ -30,6 +30,15 @@ class FloatingText:
         surface.blit(surf, (int(self.x), int(self.y)))
 
 
+GESTURES_INFO = [
+    ("✊  Fist",      "Shockwave — AOE clears left 1/3 screen",  "CD 3s",  (255, 120,  60)),
+    ("☝  Point",     "Bullet — fast single-target shot",         "CD 1s",  (255, 230,  60)),
+    ("✋  Open Hand", "Freeze — all zombies slow 50% for 3s",    "CD 5s",  (100, 180, 255)),
+    ("✌  Peace",     "Dual Laser — two beams for 0.5s",          "CD 2s",  (200,  80, 255)),
+    ("👍  Thumb Up",  "Bomb — delayed AOE explosion",             "CD 4s",  (80,  220, 120)),
+]
+
+
 class Scene:
     def __init__(self):
         self.player       = Player()
@@ -38,9 +47,9 @@ class Scene:
         self.floats       = []
         self.wave_timer   = 0.0
         self.game_over    = False
-        self._spawn_wave()
-
+        self.intro        = True          # show instructions before game starts
         self.wave_flash_timer = 0.0
+        self._intro_blink = 0.0
 
     def _spawn_wave(self):
         wave  = self.player.wave
@@ -62,9 +71,14 @@ class Scene:
 
         self.wave_flash_timer = 2.0
 
+    def start_game(self):
+        """Called when player dismisses the intro screen."""
+        self.intro = False
+        self._spawn_wave()
+
     def handle_gesture(self, gesture_name):
         """Try to fire skill for the given gesture name string."""
-        if gesture_name == "NONE" or self.game_over:
+        if gesture_name == "NONE" or self.game_over or self.intro:
             return
         if not self.player.can_use(gesture_name):
             return
@@ -74,7 +88,8 @@ class Scene:
             self.player.use_skill(gesture_name)
 
     def update(self, dt, confirmed_gesture=None):
-        if self.game_over:
+        if self.intro or self.game_over:
+            self._intro_blink += dt
             return
 
         if confirmed_gesture:
@@ -165,6 +180,11 @@ class Scene:
             y = (config.SCREEN_H - text.get_height()) // 2
             surface.blit(text, (x, y))
 
+        # Intro screen
+        if self.intro:
+            self._draw_intro(surface)
+            return
+
         # Game over overlay
         if self.game_over:
             s = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
@@ -180,3 +200,77 @@ class Scene:
             surface.blit(t1, (cx - t1.get_width() // 2, cy - 100))
             surface.blit(t2, (cx - t2.get_width() // 2, cy))
             surface.blit(t3, (cx - t3.get_width() // 2, cy + 60))
+
+    def _draw_intro(self, surface):
+        surface.fill(config.COLORS["bg"])
+
+        # Decorative scanlines
+        for yy in range(0, config.SCREEN_H, 6):
+            pygame.draw.line(surface, (0, 0, 0, 30), (0, yy), (config.SCREEN_W, yy))
+
+        cx = config.SCREEN_W // 2
+
+        font_title  = pygame.font.SysFont("Arial", 72, bold=True)
+        font_sub    = pygame.font.SysFont("Arial", 26, bold=True)
+        font_body   = pygame.font.SysFont("Arial", 22)
+        font_hint   = pygame.font.SysFont("Arial", 28, bold=True)
+        font_label  = pygame.font.SysFont("Arial", 20, bold=True)
+        font_desc   = pygame.font.SysFont("Arial", 19)
+
+        # Title
+        title = font_title.render("ZOMBIE GO DIE", True, (220, 50, 50))
+        surface.blit(title, (cx - title.get_width() // 2, 40))
+
+        # Subtitle
+        sub = font_sub.render("Defeat zombies with hand gestures!", True, (200, 180, 100))
+        surface.blit(sub, (cx - sub.get_width() // 2, 125))
+
+        # Divider
+        pygame.draw.line(surface, (60, 60, 80), (80, 165), (config.SCREEN_W - 80, 165), 1)
+
+        # How to play header
+        how = font_sub.render("HOW TO PLAY", True, (140, 200, 255))
+        surface.blit(how, (cx - how.get_width() // 2, 178))
+
+        tips = [
+            "Face your camera and show your hand clearly.",
+            "Hold each gesture steady for a moment to trigger the skill.",
+            "Zombies come from the RIGHT — don't let them reach the left edge!",
+            "Every 30 seconds a new wave arrives with more zombies.",
+        ]
+        y = 215
+        for tip in tips:
+            t = font_body.render(f"• {tip}", True, (190, 190, 190))
+            surface.blit(t, (cx - t.get_width() // 2, y))
+            y += 28
+
+        # Divider
+        pygame.draw.line(surface, (60, 60, 80), (80, y + 4), (config.SCREEN_W - 80, y + 4), 1)
+        y += 18
+
+        # Gesture table header
+        gh = font_sub.render("GESTURE SKILLS", True, (140, 200, 255))
+        surface.blit(gh, (cx - gh.get_width() // 2, y))
+        y += 32
+
+        col_gesture = cx - 480
+        col_effect  = cx - 200
+        col_cd      = cx + 340
+
+        hdr_color = (120, 120, 140)
+        surface.blit(font_label.render("Gesture",  True, hdr_color), (col_gesture, y))
+        surface.blit(font_label.render("Effect",   True, hdr_color), (col_effect,  y))
+        surface.blit(font_label.render("Cooldown", True, hdr_color), (col_cd,      y))
+        y += 24
+
+        for gesture, effect, cd, color in GESTURES_INFO:
+            pygame.draw.rect(surface, (30, 30, 45), (80, y - 2, config.SCREEN_W - 160, 26), border_radius=4)
+            surface.blit(font_desc.render(gesture, True, color),       (col_gesture, y))
+            surface.blit(font_desc.render(effect,  True, (210, 210, 210)), (col_effect, y))
+            surface.blit(font_desc.render(cd,      True, (160, 160, 180)), (col_cd,    y))
+            y += 30
+
+        # Blinking "press space" prompt
+        if int(self._intro_blink * 2) % 2 == 0:
+            prompt = font_hint.render("Press  SPACE  to start", True, (255, 220, 50))
+            surface.blit(prompt, (cx - prompt.get_width() // 2, config.SCREEN_H - 58))
